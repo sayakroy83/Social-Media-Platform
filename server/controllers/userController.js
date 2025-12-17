@@ -69,7 +69,7 @@ export const updateUserData = async(req, res)=> {
             const buffer = fs.readFileSync(cover.path)
             const response = await imagekit.upload({
                 file: buffer,
-                fileName: profile.originalname,
+                fileName: cover.originalname,
             })
 
             const url = imagekit.url({
@@ -217,7 +217,7 @@ export const sendConnectionRequest = async(req, res)=> {
 export const getUserConnections = async(req, res)=> {
     try {
         const { userId } = req.auth()
-        const { user } = await User.findById(userId).populate('connections followers following')
+        const user = await User.findById(userId).populate('connections followers following')
 
         const connections = user.connections
         const followers = user.followers

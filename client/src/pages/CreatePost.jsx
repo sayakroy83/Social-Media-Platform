@@ -1,17 +1,59 @@
-import React, { useState } from 'react'
-import { dummyUserData } from '../assets/assets'
+import { useState } from 'react'
 import { Image, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useSelector } from 'react-redux'
+import { useAuth } from '@clerk/clerk-react'
+import api from '../api/axios'
+import { useNavigate } from 'react-router-dom'
 
 const CreatePost = () => {
 
+  const navigate = useNavigate()
   const [content, setContent] = useState('')
   const [images, setImages] = useState([])
   const [loading, setLoading] = useState(false)
 
-  const user = dummyUserData;
+  const user = useSelector((state)=> state.user.value)
 
-  const handleSubmit = async()=> {}
+  const { getToken } = useAuth()
+
+  const handleSubmit = async () => {
+  if (!images.length && !content) {
+    toast.error('Please add atleast one image or text')
+    return
+  }
+
+  setLoading(true)
+
+  try {
+    const formData = new FormData()
+    const postType = images.length && content
+      ? 'text_with_image'
+      : images.length
+      ? 'image'
+      : 'text'
+
+    formData.append('content', content)
+    formData.append('post_type', postType)
+    images.forEach(img => formData.append('images', img))
+
+    await toast.promise(
+      api.post('/api/post/add', formData, {
+        headers: { Authorization: `Bearer ${await getToken()}` }
+      }),
+      {
+        loading: 'uploading...',
+        success: 'Post Added',
+        error: 'Post Not Added'
+      }
+    )
+
+    navigate('/')
+  } finally {
+    setLoading(false)
+  }
+}
+
 
   return (
     <div className='min-h-screen bg-linear-to-b from-slate-50 to-white'>
@@ -55,7 +97,14 @@ const CreatePost = () => {
 
             <input type="file" id="images" accept='image/*' hidden multiple onChange={(e)=> setImages([...images, ...e.target.files])}/>
 
-            <button disabled={loading} onClick={()=> toast.promise(handleSubmit(), ({loading: 'uploading...', success: <p>Post Added</p>, error:<p>Post Not Added</p>}))} className='text-sm bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition text-white font-medium px-8 py-2 rounded-md cursor-pointer'>Publish Post</button>
+            <button
+              disabled={loading}
+              onClick={handleSubmit}
+              className="text-sm bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition text-white font-medium px-8 py-2 rounded-md cursor-pointer"
+            >
+              Publish Post
+            </button>
+
           </div>
         </div>
       </div>
